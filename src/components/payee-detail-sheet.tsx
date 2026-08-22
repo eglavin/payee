@@ -109,7 +109,7 @@ export function PayeeDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full overflow-y-auto data-[side=right]:sm:max-w-2xl">
+      <SheetContent className="overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-2xl">
         <SheetHeader>
           <SheetTitle>{summary?.payee}</SheetTitle>
           <SheetDescription>
