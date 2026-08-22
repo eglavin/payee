@@ -1,34 +1,35 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Payee
 
-## Getting Started
+A bank transaction dashboard that turns AIB and Revolut CSV exports into a breakdown of spending by payee - parsed entirely in your browser, nothing ever leaves your device.
 
-First, run the development server:
+**Live:** [payee.eglavin.com](https://payee.eglavin.com)
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+![A screenshot showing the application running with some example data.](./assets/Screenshot.jpeg)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## What it does
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- **Upload CSV exports** from AIB or Revolut (drag & drop or file picker) - one or several files at once, even mixing banks.
+- **Groups transactions by payee**, with an optional fuzzy-matching mode that merges near-duplicate names (e.g. "VDC-TESCO STORES" and "TESCO STORES 4") into a single payee.
+- **Categorize payees** - tag payees into built-in categories (Groceries, Takeout & Restaurants, Bills & Utilities, Transport, and more) or your own custom ones, from the payee table or its detail view. Multi-select and bulk-tag several payees at once (with a confirmation prompt above 10). Category assignments are saved to your browser's local storage, keyed off a normalized payee name, so they reattach automatically the next time you upload a similar export.
+- **Export/import your categories** as a JSON file, to back them up or move them between browsers/devices.
+- **Filter** transactions by date range (with quick presets), payee search, bank, category, and amount range.
+- **Charts**: top payees or top categories by spend, and a spending trend over time.
+- **Payee detail view**: the full transaction list for a payee, its own spend-over-time chart, and category assignment.
+- **Select and export** any set of transactions to a plain-text file.
+- **Try it instantly** with a built-in example dataset (10 payees, 35 transactions across 3 months) - no file needed.
+- Light / dark / system theme.
 
-## Learn More
+## Privacy
 
-To learn more about Next.js, take a look at the following resources:
+Files are parsed entirely client-side (with PapaParse) - nothing is uploaded to a server. The only thing persisted between visits is your category tags (in `localStorage`); uploaded transactions are cleared once you close the tab.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+This is not a financial advisor - it only visualizes the transactions you give it and doesn't offer financial, investment, or tax advice.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Supported bank formats
 
-## Deploy on Vercel
+| Bank    | Format                                    |
+| ------- | ------------------------------------------ |
+| AIB     | CSV export from AIB's online banking        |
+| Revolut | CSV export from the Revolut app             |
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+New formats can be added under `src/lib/formats/` - see `src/lib/formats/types.ts` for the shape a format needs to implement (`matchesHeader` + `parse`).
