@@ -25,10 +25,14 @@ import {
   getDateBounds,
   getDatePresets,
   hasActiveFilters,
+  UNCATEGORIZED_FILTER_VALUE,
   type TransactionFilters,
 } from "@/lib/filter-transactions";
 import { formatDate } from "@/lib/format";
+import type { Category } from "@/lib/categories";
 import type { Transaction } from "@/lib/types";
+
+const ALL_CATEGORIES_VALUE = "all";
 
 interface FilterBarProps {
   transactions: Transaction[];
@@ -36,6 +40,7 @@ interface FilterBarProps {
   onFiltersChange: (filters: TransactionFilters) => void;
   filteredCount: number;
   totalCount: number;
+  categories: Category[];
 }
 
 export function FilterBar({
@@ -44,10 +49,14 @@ export function FilterBar({
   onFiltersChange,
   filteredCount,
   totalCount,
+  categories,
 }: FilterBarProps) {
   const [datePopoverOpen, setDatePopoverOpen] = useState(false);
 
-  const availableBanks = useMemo(() => getAvailableBanks(transactions), [transactions]);
+  const availableBanks = useMemo(
+    () => getAvailableBanks(transactions),
+    [transactions],
+  );
 
   const dateBounds = useMemo(() => getDateBounds(transactions), [transactions]);
   const presets = useMemo(
@@ -76,7 +85,10 @@ export function FilterBar({
           <Popover open={datePopoverOpen} onOpenChange={setDatePopoverOpen}>
             <PopoverTrigger
               render={
-                <Button variant="outline" className="w-[240px] justify-start font-normal" />
+                <Button
+                  variant="outline"
+                  className="w-[220px] justify-start font-normal"
+                />
               }
             >
               <CalendarIcon className="size-4" />
@@ -105,7 +117,10 @@ export function FilterBar({
                   selected={calendarSelected}
                   defaultMonth={filters.dateFrom ?? dateBounds?.max}
                   onSelect={(range) =>
-                    setDateRange({ from: range?.from ?? null, to: range?.to ?? null })
+                    setDateRange({
+                      from: range?.from ?? null,
+                      to: range?.to ?? null,
+                    })
                   }
                   numberOfMonths={2}
                 />
@@ -136,10 +151,13 @@ export function FilterBar({
             <Select
               value={filters.bank ?? "all"}
               onValueChange={(value) =>
-                onFiltersChange({ ...filters, bank: value === "all" ? null : value })
+                onFiltersChange({
+                  ...filters,
+                  bank: value === "all" ? null : value,
+                })
               }
             >
-              <SelectTrigger id="bank-filter" className="w-[160px]">
+              <SelectTrigger id="bank-filter" className="w-[150px]">
                 <SelectValue placeholder="All banks" />
               </SelectTrigger>
               <SelectContent>
@@ -155,17 +173,59 @@ export function FilterBar({
         )}
 
         <div className="flex flex-col gap-1.5">
+          <Label htmlFor="category-filter">Category</Label>
+          <Select
+            value={filters.category ?? ALL_CATEGORIES_VALUE}
+            onValueChange={(value) =>
+              onFiltersChange({
+                ...filters,
+                category: value === ALL_CATEGORIES_VALUE ? null : value,
+              })
+            }
+          >
+            <SelectTrigger id="category-filter" className="w-[150px]">
+              <SelectValue placeholder="All categories">
+                {(value: string | null) => {
+                  if (!value || value === ALL_CATEGORIES_VALUE)
+                    return "All categories";
+                  if (value === UNCATEGORIZED_FILTER_VALUE)
+                    return "Uncategorized";
+                  return (
+                    categories.find((c) => c.id === value)?.label ??
+                    "All categories"
+                  );
+                }}
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_CATEGORIES_VALUE}>
+                All categories
+              </SelectItem>
+              <SelectItem value={UNCATEGORIZED_FILTER_VALUE}>
+                Uncategorized
+              </SelectItem>
+              {categories.map((category) => (
+                <SelectItem key={category.id} value={category.id}>
+                  {category.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex flex-col gap-1.5">
           <Label htmlFor="min-amount">Min amount</Label>
           <Input
             id="min-amount"
             type="number"
             placeholder="0"
-            className="w-[110px]"
+            className="w-[100px]"
             value={filters.minAmount ?? ""}
             onChange={(e) =>
               onFiltersChange({
                 ...filters,
-                minAmount: e.target.value === "" ? null : Number(e.target.value),
+                minAmount:
+                  e.target.value === "" ? null : Number(e.target.value),
               })
             }
           />
@@ -177,18 +237,25 @@ export function FilterBar({
             id="max-amount"
             type="number"
             placeholder="Any"
-            className="w-[110px]"
+            className="w-[100px]"
             value={filters.maxAmount ?? ""}
             onChange={(e) =>
               onFiltersChange({
                 ...filters,
-                maxAmount: e.target.value === "" ? null : Number(e.target.value),
+                maxAmount:
+                  e.target.value === "" ? null : Number(e.target.value),
               })
             }
           />
         </div>
+      </div>
 
-        {hasActiveFilters(filters) && (
+      {hasActiveFilters(filters) && (
+        <div className="flex items-center gap-2">
+          <p className="text-sm text-muted-foreground">
+            Showing {filteredCount} of {totalCount} transactions
+          </p>
+
           <Button
             variant="ghost"
             size="sm"
@@ -197,13 +264,7 @@ export function FilterBar({
             <X className="size-4" />
             Clear filters
           </Button>
-        )}
-      </div>
-
-      {hasActiveFilters(filters) && (
-        <p className="text-sm text-muted-foreground">
-          Showing {filteredCount} of {totalCount} transactions
-        </p>
+        </div>
       )}
     </div>
   );

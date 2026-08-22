@@ -11,14 +11,25 @@ import { TransactionsTable } from "@/components/transactions-table";
 import { TopPayeesChart } from "@/components/top-payees-chart";
 import { SpendingTrendChart } from "@/components/spending-trend-chart";
 import { PayeeDetailSheet } from "@/components/payee-detail-sheet";
+import { CategoryPicker } from "@/components/category-picker";
+import { CategoryImportExport } from "@/components/category-import-export";
 import { SelectedTransactionsDialog } from "@/components/selected-transactions-dialog";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { groupByPayee, groupByPayeeFuzzy, topPayeesBySpend } from "@/lib/aggregate";
+import { groupByPayee, groupByPayeeFuzzy } from "@/lib/aggregate";
 import { bankFormats } from "@/lib/formats";
 import {
   emptyFilters,
@@ -29,6 +40,9 @@ import {
 import { prepareTransactions, detectCurrencies, type LoadedFile } from "@/lib/loaded-files";
 import type { Transaction } from "@/lib/types";
 import { useLocalStorage } from "@/hooks/use-local-storage";
+import { usePayeeCategories } from "@/hooks/use-payee-categories";
+
+const BULK_CATEGORY_CONFIRM_THRESHOLD = 10;
 
 const aboutItems = [
   {
@@ -44,12 +58,12 @@ const aboutItems = [
   {
     icon: TrendingUp,
     title: "Charts and totals",
-    body: "See money in/out, top payees by spend, and spending trends over time — filterable by date, amount, bank, and payee.",
+    body: "See money in/out, top payees by spend, and spending trends over time — filterable by date, amount, bank, payee, and category.",
   },
   {
     icon: ShieldCheck,
     title: "Stays on your device",
-    body: "Files are parsed entirely in your browser and never uploaded anywhere. Nothing is saved once you close the tab.",
+    body: "Files are parsed entirely in your browser and never uploaded anywhere. Categories you tag are remembered locally for next time.",
   },
 ];
 
@@ -62,6 +76,20 @@ export function Dashboard() {
   const [tableView, setTableView] = useState<"payee" | "date">("payee");
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set());
   const [exportOpen, setExportOpen] = useState(false);
+  const [selectedPayeeNames, setSelectedPayeeNames] = useState<Set<string>>(new Set());
+  const [pendingBulkCategory, setPendingBulkCategory] = useState<{
+    categoryId: string | null;
+    payees: string[];
+  } | null>(null);
+  const {
+    categories,
+    customCategories,
+    assignments,
+    getCategoryId,
+    setCategoryId,
+    addCustomCategory,
+    importCategories,
+  } = usePayeeCategories();
 
   const transactions = useMemo(
     () => files.flatMap((f) => f.transactions),
@@ -69,8 +97,8 @@ export function Dashboard() {
   );
 
   const filteredTransactions = useMemo(
-    () => filterTransactions(transactions, filters),
-    [transactions, filters],
+    () => filterTransactions(transactions, filters, getCategoryId),
+    [transactions, filters, getCategoryId],
   );
 
   const payeeSummaries = useMemo(
@@ -91,11 +119,6 @@ export function Dashboard() {
   const totalCredit = useMemo(
     () => filteredTransactions.reduce((sum, t) => sum + t.credit, 0),
     [filteredTransactions],
-  );
-
-  const topPayees = useMemo(
-    () => topPayeesBySpend(payeeSummaries, 8),
-    [payeeSummaries],
   );
 
   // Maps a transaction's raw payee name to whichever group it currently
@@ -124,6 +147,16 @@ export function Dashboard() {
     () => filteredTransactions.filter((t) => selectedIds.has(t.id)),
     [filteredTransactions, selectedIds],
   );
+
+  // Drops stale payee-table selections whenever the set of payees changes
+  // (file removal, filters, or the fuzzy-matching toggle renaming groups).
+  // Any subsequent selection change persists this pruned set as the new state.
+  const validSelectedPayeeNames = useMemo(() => {
+    if (selectedPayeeNames.size === 0) return selectedPayeeNames;
+    const validNames = new Set(payeeSummaries.map((s) => s.payee));
+    const next = new Set([...selectedPayeeNames].filter((p) => validNames.has(p)));
+    return next.size === selectedPayeeNames.size ? selectedPayeeNames : next;
+  }, [selectedPayeeNames, payeeSummaries]);
 
   function handleFilesLoaded(results: LoadedFileResult[]) {
     const newFiles: LoadedFile[] = results.map((result) => {
@@ -159,13 +192,30 @@ export function Dashboard() {
     setSelectedPayee(null);
     setFilters(emptyFilters);
     setSelectedIds(new Set());
+    setSelectedPayeeNames(new Set());
+  }
+
+  function applyBulkCategory(categoryId: string | null, payees: string[]) {
+    for (const payee of payees) {
+      setCategoryId(payee, categoryId);
+    }
+    setSelectedPayeeNames(new Set());
+  }
+
+  function handleBulkCategoryChange(categoryId: string | null) {
+    const payees = [...validSelectedPayeeNames];
+    if (payees.length > BULK_CATEGORY_CONFIRM_THRESHOLD) {
+      setPendingBulkCategory({ categoryId, payees });
+    } else {
+      applyBulkCategory(categoryId, payees);
+    }
   }
 
   const hasData = transactions.length > 0;
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 p-6">
-      <div className="flex items-start justify-between gap-4">
+    <div className="mx-auto flex max-w-6xl flex-col gap-4 p-6">
+      <div className="flex flex-col items-start justify-between gap-4 md:flex-row">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">
             Payee
@@ -175,7 +225,14 @@ export function Dashboard() {
             payee.
           </p>
         </div>
-        <ThemeToggle />
+        <div className="flex items-start gap-2">
+          <CategoryImportExport
+            customCategories={customCategories}
+            assignments={assignments}
+            onImport={importCategories}
+          />
+          <ThemeToggle />
+        </div>
       </div>
 
       <FileUpload
@@ -227,6 +284,7 @@ export function Dashboard() {
             onFiltersChange={setFilters}
             filteredCount={filteredTransactions.length}
             totalCount={transactions.length}
+            categories={categories}
           />
 
           <div className="flex items-center gap-2">
@@ -250,8 +308,13 @@ export function Dashboard() {
             transactionCount={filteredTransactions.length}
           />
 
-          <div className="grid gap-6 lg:grid-cols-2">
-            <TopPayeesChart summaries={topPayees} currency={currency} />
+          <div className="grid gap-4 lg:grid-cols-2">
+            <TopPayeesChart
+              summaries={payeeSummaries}
+              currency={currency}
+              categories={categories}
+              getCategoryId={getCategoryId}
+            />
             <SpendingTrendChart
               transactions={filteredTransactions}
               summaries={payeeSummaries}
@@ -268,6 +331,20 @@ export function Dashboard() {
                     View selected (<span className="font-mono tabular-nums">{selectedIds.size}</span>)
                   </Button>
                 )}
+                {tableView === "payee" && validSelectedPayeeNames.size > 0 && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">
+                      <span className="font-mono tabular-nums">{validSelectedPayeeNames.size}</span> selected
+                    </span>
+                    <CategoryPicker
+                      size="sm"
+                      placeholder="Set category"
+                      categories={categories}
+                      onCategoryChange={handleBulkCategoryChange}
+                      onAddCategory={addCustomCategory}
+                    />
+                  </div>
+                )}
                 <Tabs value={tableView} onValueChange={setTableView}>
                   <TabsList>
                     <TabsTrigger value="payee">By payee</TabsTrigger>
@@ -282,6 +359,12 @@ export function Dashboard() {
                   summaries={payeeSummaries}
                   currency={currency}
                   onSelectPayee={setSelectedPayee}
+                  categories={categories}
+                  getCategoryId={getCategoryId}
+                  setCategoryId={setCategoryId}
+                  onAddCategory={addCustomCategory}
+                  selectedPayees={validSelectedPayeeNames}
+                  onSelectionChange={setSelectedPayeeNames}
                 />
               ) : (
                 <TransactionsTable
@@ -305,6 +388,12 @@ export function Dashboard() {
           if (!open) setSelectedPayee(null);
         }}
         currency={currency}
+        categories={categories}
+        categoryId={selectedSummary ? getCategoryId(selectedSummary.payee) : undefined}
+        onCategoryChange={(categoryId) => {
+          if (selectedSummary) setCategoryId(selectedSummary.payee, categoryId);
+        }}
+        onAddCategory={addCustomCategory}
       />
 
       <SelectedTransactionsDialog
@@ -313,6 +402,57 @@ export function Dashboard() {
         onOpenChange={setExportOpen}
         currency={currency}
       />
+
+      <Dialog
+        open={pendingBulkCategory !== null}
+        onOpenChange={(open) => {
+          if (!open) setPendingBulkCategory(null);
+        }}
+      >
+        <DialogContent className="w-full max-w-[calc(100%-2rem)] sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              Change category for{" "}
+              <span className="font-mono tabular-nums">{pendingBulkCategory?.payees.length}</span>{" "}
+              payees?
+            </DialogTitle>
+            <DialogDescription>
+              {pendingBulkCategory?.categoryId ? (
+                <>
+                  This sets every selected payee&rsquo;s category to{" "}
+                  <span className="font-medium text-foreground">
+                    {categories.find((c) => c.id === pendingBulkCategory.categoryId)?.label ??
+                      pendingBulkCategory.categoryId}
+                  </span>
+                  . This can&rsquo;t be undone automatically.
+                </>
+              ) : (
+                <>
+                  This clears the category on every selected payee. This can&rsquo;t be undone
+                  automatically.
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose render={<Button type="button" variant="outline" />}>
+              Cancel
+            </DialogClose>
+            <Button
+              type="button"
+              onClick={() => {
+                if (!pendingBulkCategory) return;
+                applyBulkCategory(pendingBulkCategory.categoryId, pendingBulkCategory.payees);
+                setPendingBulkCategory(null);
+              }}
+            >
+              Change{" "}
+              <span className="font-mono tabular-nums">{pendingBulkCategory?.payees.length}</span>{" "}
+              payees
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Footer />
     </div>

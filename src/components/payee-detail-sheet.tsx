@@ -20,7 +20,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { PayeeTrendChart } from "@/components/payee-trend-chart";
+import { CategoryPicker } from "@/components/category-picker";
 import { formatCurrency, formatDate } from "@/lib/format";
+import type { Category } from "@/lib/categories";
 import type { PayeeSummary, Transaction } from "@/lib/types";
 import { useLocalStorage } from "@/hooks/use-local-storage";
 
@@ -29,6 +31,10 @@ interface PayeeDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   currency: string;
+  categories: Category[];
+  categoryId?: string;
+  onCategoryChange: (categoryId: string | null) => void;
+  onAddCategory: (label: string) => Category;
 }
 
 type SortKey = "date" | "amount";
@@ -43,6 +49,10 @@ export function PayeeDetailSheet({
   open,
   onOpenChange,
   currency,
+  categories,
+  categoryId,
+  onCategoryChange,
+  onAddCategory,
 }: PayeeDetailSheetProps) {
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -127,6 +137,18 @@ export function PayeeDetailSheet({
               </>
             )}
           </SheetDescription>
+          {summary && (
+            <div className="flex items-center gap-2 pt-1">
+              <span className="text-xs text-muted-foreground">Category</span>
+              <CategoryPicker
+                size="sm"
+                categories={categories}
+                categoryId={categoryId}
+                onCategoryChange={onCategoryChange}
+                onAddCategory={onAddCategory}
+              />
+            </div>
+          )}
           {isMerged && (
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
               <span className="text-xs text-muted-foreground">Merged from:</span>

@@ -8,6 +8,8 @@ export interface TransactionFilters {
   minAmount: number | null;
   maxAmount: number | null;
   bank: string | null;
+  /** A category id, `UNCATEGORIZED_FILTER_VALUE`, or null for "all categories". */
+  category: string | null;
 }
 
 export const emptyFilters: TransactionFilters = {
@@ -17,7 +19,11 @@ export const emptyFilters: TransactionFilters = {
   minAmount: null,
   maxAmount: null,
   bank: null,
+  category: null,
 };
+
+/** Sentinel `category` filter value matching payees with no category assigned. */
+export const UNCATEGORIZED_FILTER_VALUE = "__uncategorized__";
 
 export function hasActiveFilters(filters: TransactionFilters): boolean {
   return (
@@ -26,7 +32,8 @@ export function hasActiveFilters(filters: TransactionFilters): boolean {
     filters.payeeSearch.trim() !== "" ||
     filters.minAmount !== null ||
     filters.maxAmount !== null ||
-    filters.bank !== null
+    filters.bank !== null ||
+    filters.category !== null
   );
 }
 
@@ -46,6 +53,8 @@ function transactionAmount(txn: Transaction): number {
 export function filterTransactions(
   transactions: Transaction[],
   filters: TransactionFilters,
+  /** Resolves a raw payee string to its assigned category id, if any. Required to use `filters.category`. */
+  getCategoryId?: (payee: string) => string | undefined,
 ): Transaction[] {
   if (!hasActiveFilters(filters)) return transactions;
 
@@ -56,6 +65,15 @@ export function filterTransactions(
     if (filters.dateTo && txn.date > filters.dateTo) return false;
     if (search && !txn.payee.toLowerCase().includes(search)) return false;
     if (filters.bank && txn.source !== filters.bank) return false;
+
+    if (filters.category) {
+      const categoryId = getCategoryId?.(txn.payee);
+      if (filters.category === UNCATEGORIZED_FILTER_VALUE) {
+        if (categoryId !== undefined) return false;
+      } else if (categoryId !== filters.category) {
+        return false;
+      }
+    }
 
     const amount = transactionAmount(txn);
     if (filters.minAmount !== null && amount < filters.minAmount) return false;

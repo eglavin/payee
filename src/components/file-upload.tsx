@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { bankFormats, parseTransactions } from "@/lib/formats";
 import type { LoadedFile } from "@/lib/loaded-files";
+import { SAMPLE_TRANSACTIONS_CSV, SAMPLE_TRANSACTIONS_FILE_NAME } from "@/lib/sample-data";
 
 export interface LoadedFileResult {
   name: string;
@@ -69,6 +70,13 @@ export function FileUpload({
     const fileList = Array.from(e.target.files ?? []);
     await processFiles(fileList);
     if (inputRef.current) inputRef.current.value = "";
+  }
+
+  function handleTryExample() {
+    const file = new File([SAMPLE_TRANSACTIONS_CSV], SAMPLE_TRANSACTIONS_FILE_NAME, {
+      type: "text/csv",
+    });
+    void processFiles([file]);
   }
 
   function handleClearAll() {
@@ -188,7 +196,19 @@ export function FileUpload({
       )}
 
       {!hasFiles && (
-        <Label htmlFor="csv-upload">Upload bank transaction exports (CSV)</Label>
+        <div className="flex flex-wrap items-center gap-2">
+          <Label htmlFor="csv-upload">Upload bank transaction exports (CSV)</Label>
+          <span className="text-sm text-muted-foreground">or</span>
+          <Button
+            type="button"
+            variant="link"
+            size="sm"
+            className="h-auto p-0 text-sm"
+            onClick={handleTryExample}
+          >
+            try example data
+          </Button>
+        </div>
       )}
       <Input
         ref={inputRef}

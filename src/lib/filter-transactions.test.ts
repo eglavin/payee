@@ -6,6 +6,7 @@ import {
   getDateBounds,
   getDatePresets,
   hasActiveFilters,
+  UNCATEGORIZED_FILTER_VALUE,
 } from "./filter-transactions";
 import { makeTransaction as txn } from "./test-fixtures";
 
@@ -19,6 +20,7 @@ describe("hasActiveFilters", () => {
     expect(hasActiveFilters({ ...emptyFilters, minAmount: 10 })).toBe(true);
     expect(hasActiveFilters({ ...emptyFilters, dateFrom: new Date() })).toBe(true);
     expect(hasActiveFilters({ ...emptyFilters, bank: "AIB" })).toBe(true);
+    expect(hasActiveFilters({ ...emptyFilters, category: "groceries" })).toBe(true);
   });
 });
 
@@ -83,6 +85,53 @@ describe("filterTransactions", () => {
     const result = filterTransactions(transactions, { ...emptyFilters, bank: "Revolut" });
 
     expect(result).toEqual([transactions[1]]);
+  });
+
+  it("filters by category id using a getCategoryId resolver", () => {
+    const transactions = [
+      txn({ payee: "TESCO" }),
+      txn({ payee: "DOMINOS" }),
+      txn({ payee: "NETFLIX" }),
+    ];
+    const getCategoryId = (payee: string) =>
+      ({ TESCO: "groceries", DOMINOS: "takeout" })[payee];
+
+    const result = filterTransactions(
+      transactions,
+      { ...emptyFilters, category: "groceries" },
+      getCategoryId,
+    );
+
+    expect(result).toEqual([transactions[0]]);
+  });
+
+  it("filters to uncategorized payees via the sentinel value", () => {
+    const transactions = [
+      txn({ payee: "TESCO" }),
+      txn({ payee: "DOMINOS" }),
+      txn({ payee: "NETFLIX" }),
+    ];
+    const getCategoryId = (payee: string) =>
+      ({ TESCO: "groceries", DOMINOS: "takeout" })[payee];
+
+    const result = filterTransactions(
+      transactions,
+      { ...emptyFilters, category: UNCATEGORIZED_FILTER_VALUE },
+      getCategoryId,
+    );
+
+    expect(result).toEqual([transactions[2]]);
+  });
+
+  it("treats every transaction as uncategorized when no getCategoryId resolver is given", () => {
+    const transactions = [txn({ payee: "TESCO" }), txn({ payee: "DOMINOS" })];
+
+    const result = filterTransactions(transactions, {
+      ...emptyFilters,
+      category: UNCATEGORIZED_FILTER_VALUE,
+    });
+
+    expect(result).toEqual(transactions);
   });
 
   it("combines filters with AND logic", () => {
