@@ -225,7 +225,7 @@ export function Dashboard() {
             payee.
           </p>
         </div>
-        <div className="flex items-start gap-2">
+        <div className="flex items-start gap-2 flex-wrap">
           <CategoryImportExport
             customCategories={customCategories}
             assignments={assignments}
