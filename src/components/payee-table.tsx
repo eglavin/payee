@@ -14,6 +14,7 @@ import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { CategoryPicker } from "@/components/category-picker";
 import { formatCurrency } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { Category } from "@/lib/categories";
 import type { PayeeSummary } from "@/lib/types";
 import { useVirtualTableRows } from "@/hooks/use-virtual-table-rows";
@@ -84,7 +85,8 @@ export function PayeeTable({
     onSelectionChange(next);
   }
 
-  const allSelected = sorted.length > 0 && sorted.every((s) => selectedPayees.has(s.payee));
+  const allSelected =
+    sorted.length > 0 && sorted.every((s) => selectedPayees.has(s.payee));
   const someSelected = sorted.some((s) => selectedPayees.has(s.payee));
 
   function toggleAll(checked: boolean) {
@@ -99,12 +101,18 @@ export function PayeeTable({
     onSelectionChange(next);
   }
 
-  function renderSortHeader(label: string, sortKeyValue: SortKey) {
+  function renderSortHeader(
+    label: string,
+    sortKeyValue: SortKey,
+    className?: string,
+  ) {
     const active = sortKey === sortKeyValue;
     return (
       <TableHead
         tabIndex={0}
-        aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
+        aria-sort={
+          active ? (sortDir === "asc" ? "ascending" : "descending") : undefined
+        }
         onClick={() => toggleSort(sortKeyValue)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -112,7 +120,10 @@ export function PayeeTable({
             toggleSort(sortKeyValue);
           }
         }}
-        className="sticky top-0 z-10 cursor-pointer bg-card text-right select-none focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        className={cn(
+          "sticky top-0 z-10 cursor-pointer bg-card text-right select-none focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+          className
+        )}
       >
         <span className="inline-flex items-center gap-1">
           {label}
@@ -128,8 +139,13 @@ export function PayeeTable({
   }
 
   const columnCount = hasMerges ? 7 : 6;
-  const { containerRef, virtualItems, paddingTop, paddingBottom, measureElement } =
-    useVirtualTableRows({ count: sorted.length, estimateRowHeight: 37 });
+  const {
+    containerRef,
+    virtualItems,
+    paddingTop,
+    paddingBottom,
+    measureElement,
+  } = useVirtualTableRows({ count: sorted.length, estimateRowHeight: 37 });
 
   if (summaries.length === 0) {
     return (
@@ -141,6 +157,7 @@ export function PayeeTable({
 
   return (
     <Table
+      className="table-fixed min-w-[900px]"
       containerClassName="h-[70vh] overflow-y-auto rounded-md border"
       containerRef={containerRef}
       aria-rowcount={sorted.length + 1}
@@ -156,11 +173,11 @@ export function PayeeTable({
             />
           </TableHead>
           <TableHead className="sticky top-0 z-10 bg-card">Payee</TableHead>
-          <TableHead className="sticky top-0 z-10 bg-card">Category</TableHead>
-          {renderSortHeader("Spent", "totalDebit")}
-          {renderSortHeader("Received", "totalCredit")}
-          {renderSortHeader("Transactions", "count")}
-          {hasMerges && renderSortHeader("Merged", "merged")}
+          <TableHead className="sticky top-0 z-10 bg-card w-[200px]">Category</TableHead>
+          {renderSortHeader("Spent", "totalDebit", "w-[130px]")}
+          {renderSortHeader("Received", "totalCredit", "w-[130px]")}
+          {renderSortHeader("Transactions", "count", "w-[110px]")}
+          {hasMerges && renderSortHeader("Merged", "merged", "w-[90px]")}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -188,12 +205,16 @@ export function PayeeTable({
                   onSelectPayee(summary.payee);
                 }
               }}
-              data-state={selectedPayees.has(summary.payee) ? "selected" : undefined}
+              data-state={
+                selectedPayees.has(summary.payee) ? "selected" : undefined
+              }
             >
               <TableCell onClick={(e) => e.stopPropagation()}>
                 <Checkbox
                   checked={selectedPayees.has(summary.payee)}
-                  onCheckedChange={(checked) => toggleRow(summary.payee, checked === true)}
+                  onCheckedChange={(checked) =>
+                    toggleRow(summary.payee, checked === true)
+                  }
                   aria-label={`Select ${summary.payee}`}
                 />
               </TableCell>
@@ -203,7 +224,9 @@ export function PayeeTable({
                   size="sm"
                   categories={categories}
                   categoryId={getCategoryId(summary.payee)}
-                  onCategoryChange={(categoryId) => setCategoryId(summary.payee, categoryId)}
+                  onCategoryChange={(categoryId) =>
+                    setCategoryId(summary.payee, categoryId)
+                  }
                   onAddCategory={onAddCategory}
                 />
               </TableCell>
@@ -217,11 +240,16 @@ export function PayeeTable({
                   ? formatCurrency(summary.totalCredit, currency)
                   : "—"}
               </TableCell>
-              <TableCell className="font-mono text-right tabular-nums">{summary.count}</TableCell>
+              <TableCell className="font-mono text-right tabular-nums">
+                {summary.count}
+              </TableCell>
               {hasMerges && (
                 <TableCell className="text-right">
                   {summary.variants.length > 1 ? (
-                    <Badge variant="secondary" className="font-mono font-normal tabular-nums">
+                    <Badge
+                      variant="secondary"
+                      className="font-mono font-normal tabular-nums"
+                    >
                       {summary.variants.length}
                     </Badge>
                   ) : (

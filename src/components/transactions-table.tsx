@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/table";
 import { CategoryPicker } from "@/components/category-picker";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { Category } from "@/lib/categories";
 import type { Transaction } from "@/lib/types";
 import { useVirtualTableRows } from "@/hooks/use-virtual-table-rows";
@@ -75,12 +76,19 @@ export function TransactionsTable({
     }
   }
 
-  function renderSortHeader(label: string, key: SortKey, align: "left" | "right" = "left") {
+  function renderSortHeader(
+    label: string,
+    key: SortKey,
+    align: "left" | "right" = "left",
+    className?: string,
+  ) {
     const active = sortKey === key;
     return (
       <TableHead
         tabIndex={0}
-        aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
+        aria-sort={
+          active ? (sortDir === "asc" ? "ascending" : "descending") : undefined
+        }
         onClick={() => toggleSort(key)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -88,7 +96,10 @@ export function TransactionsTable({
             toggleSort(key);
           }
         }}
-        className={`sticky top-0 z-10 cursor-pointer bg-card select-none focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${align === "right" ? "text-right" : ""}`}
+        className={cn(
+          `sticky top-0 z-10 cursor-pointer bg-card select-none focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${align === "right" ? "text-right" : ""}`,
+          className,
+        )}
       >
         <span className="inline-flex items-center gap-1">
           {label}
@@ -113,7 +124,8 @@ export function TransactionsTable({
     onSelectionChange(next);
   }
 
-  const allSelected = sorted.length > 0 && sorted.every((t) => selectedIds.has(t.id));
+  const allSelected =
+    sorted.length > 0 && sorted.every((t) => selectedIds.has(t.id));
   const someSelected = sorted.some((t) => selectedIds.has(t.id));
 
   function toggleAll(checked: boolean) {
@@ -128,8 +140,13 @@ export function TransactionsTable({
     onSelectionChange(next);
   }
 
-  const { containerRef, virtualItems, paddingTop, paddingBottom, measureElement } =
-    useVirtualTableRows({ count: sorted.length, estimateRowHeight: 37 });
+  const {
+    containerRef,
+    virtualItems,
+    paddingTop,
+    paddingBottom,
+    measureElement,
+  } = useVirtualTableRows({ count: sorted.length, estimateRowHeight: 37 });
 
   if (sorted.length === 0) {
     return (
@@ -141,6 +158,7 @@ export function TransactionsTable({
 
   return (
     <Table
+      className="table-fixed min-w-[900px]"
       containerClassName="h-[70vh] overflow-y-auto rounded-md border"
       containerRef={containerRef}
       aria-rowcount={sorted.length + 1}
@@ -155,12 +173,12 @@ export function TransactionsTable({
               aria-label="Select all transactions"
             />
           </TableHead>
-          {renderSortHeader("Date", "date")}
+          {renderSortHeader("Date", "date", "left", "w-[120px]")}
           {renderSortHeader("Payee", "payee")}
-          <TableHead className="sticky top-0 z-10 bg-card">Category</TableHead>
-          <TableHead className="sticky top-0 z-10 bg-card">Details</TableHead>
-          <TableHead className="sticky top-0 z-10 bg-card">Bank</TableHead>
-          {renderSortHeader("Amount", "amount", "right")}
+          <TableHead className="sticky top-0 z-10 bg-card w-[200px]">Category</TableHead>
+          <TableHead className="sticky top-0 z-10 bg-card w-[170px]">Details</TableHead>
+          <TableHead className="sticky top-0 z-10 bg-card w-[100px]">Bank</TableHead>
+          {renderSortHeader("Amount", "amount", "right", "w-[130px]")}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -194,22 +212,30 @@ export function TransactionsTable({
               <TableCell onClick={(e) => e.stopPropagation()}>
                 <Checkbox
                   checked={selectedIds.has(txn.id)}
-                  onCheckedChange={(checked) => toggleRow(txn.id, checked === true)}
+                  onCheckedChange={(checked) =>
+                    toggleRow(txn.id, checked === true)
+                  }
                   aria-label={`Select transaction on ${formatDate(txn.date)} for ${payee}`}
                 />
               </TableCell>
-              <TableCell className="whitespace-nowrap">{formatDate(txn.date)}</TableCell>
+              <TableCell className="whitespace-nowrap">
+                {formatDate(txn.date)}
+              </TableCell>
               <TableCell className="font-medium">{payee}</TableCell>
               <TableCell onClick={(e) => e.stopPropagation()}>
                 <CategoryPicker
                   size="sm"
                   categories={categories}
                   categoryId={getCategoryId(payee)}
-                  onCategoryChange={(categoryId) => setCategoryId(payee, categoryId)}
+                  onCategoryChange={(categoryId) =>
+                    setCategoryId(payee, categoryId)
+                  }
                   onAddCategory={onAddCategory}
                 />
               </TableCell>
-              <TableCell className="text-muted-foreground">{txn.detail ?? "—"}</TableCell>
+              <TableCell className="text-muted-foreground">
+                {txn.detail ?? "—"}
+              </TableCell>
               <TableCell>
                 {txn.source ? (
                   <Badge variant="secondary" className="font-normal">

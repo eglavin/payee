@@ -22,6 +22,7 @@ import {
 import { PayeeTrendChart } from "@/components/payee-trend-chart";
 import { CategoryPicker } from "@/components/category-picker";
 import { formatCurrency, formatDate } from "@/lib/format";
+import { cn } from "@/lib/utils";
 import type { Category } from "@/lib/categories";
 import type { PayeeSummary, Transaction } from "@/lib/types";
 import { useLocalStorage } from "@/hooks/use-local-storage";
@@ -59,7 +60,10 @@ export function PayeeDetailSheet({
 }: PayeeDetailSheetProps) {
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
-  const [activeTab, setActiveTab] = useLocalStorage("payeeDetailTab", "transactions");
+  const [activeTab, setActiveTab] = useLocalStorage(
+    "payeeDetailTab",
+    "transactions",
+  );
 
   const transactions = useMemo(() => {
     if (!summary) return [];
@@ -72,8 +76,16 @@ export function PayeeDetailSheet({
 
   const isMerged = (summary?.variants.length ?? 0) > 1;
 
-  const { containerRef, virtualItems, paddingTop, paddingBottom, measureElement } =
-    useVirtualTableRows({ count: transactions.length, estimateRowHeight: 41 });
+  const {
+    containerRef,
+    virtualItems,
+    paddingTop,
+    paddingBottom,
+    measureElement,
+  } = useVirtualTableRows({
+    count: transactions.length,
+    estimateRowHeight: 41,
+  });
 
   useEffect(() => {
     if (!open) return;
@@ -102,12 +114,19 @@ export function PayeeDetailSheet({
     }
   }
 
-  function renderSortHeader(label: string, sortKeyValue: SortKey, align: "left" | "right") {
+  function renderSortHeader(
+    label: string,
+    sortKeyValue: SortKey,
+    align: "left" | "right",
+    className?: string,
+  ) {
     const active = sortKey === sortKeyValue;
     return (
       <TableHead
         tabIndex={0}
-        aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
+        aria-sort={
+          active ? (sortDir === "asc" ? "ascending" : "descending") : undefined
+        }
         onClick={() => toggleSort(sortKeyValue)}
         onKeyDown={(e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -115,7 +134,10 @@ export function PayeeDetailSheet({
             toggleSort(sortKeyValue);
           }
         }}
-        className={`sticky top-0 z-10 cursor-pointer bg-card select-none focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${align === "right" ? "text-right" : ""}`}
+        className={cn(
+          `sticky top-0 z-10 cursor-pointer bg-card select-none focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${align === "right" ? "text-right" : ""}`,
+          className
+        )}
       >
         <span className="inline-flex items-center gap-1">
           {label}
@@ -138,7 +160,8 @@ export function PayeeDetailSheet({
           <SheetDescription>
             {summary && (
               <>
-                <span className="font-mono tabular-nums">{summary.count}</span> transactions ·{" "}
+                <span className="font-mono tabular-nums">{summary.count}</span>{" "}
+                transactions ·{" "}
                 <span className="font-mono tabular-nums">
                   {formatCurrency(summary.totalDebit, currency)}
                 </span>{" "}
@@ -164,9 +187,15 @@ export function PayeeDetailSheet({
           )}
           {isMerged && (
             <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <span className="text-xs text-muted-foreground">Merged from:</span>
+              <span className="text-xs text-muted-foreground">
+                Merged from:
+              </span>
               {summary!.variants.map((variant) => (
-                <Badge key={variant} variant="secondary" className="font-normal">
+                <Badge
+                  key={variant}
+                  variant="secondary"
+                  className="font-normal"
+                >
                   {variant}
                 </Badge>
               ))}
@@ -174,7 +203,11 @@ export function PayeeDetailSheet({
           )}
         </SheetHeader>
         <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">
+          <Tabs
+            value={activeTab}
+            onValueChange={setActiveTab}
+            className="flex min-h-0 flex-1 flex-col"
+          >
             <TabsList>
               <TabsTrigger value="transactions">
                 Transactions
@@ -189,24 +222,35 @@ export function PayeeDetailSheet({
                 </kbd>
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="transactions" className="flex min-h-0 flex-1 flex-col">
+            <TabsContent
+              value="transactions"
+              className="flex min-h-0 flex-1 flex-col"
+            >
               <Table
+                className="table-fixed min-w-[400px]"
                 containerClassName="h-full overflow-y-auto rounded-md border"
                 containerRef={containerRef}
                 aria-rowcount={transactions.length + 1}
               >
                 <TableHeader>
                   <TableRow aria-rowindex={1}>
-                    {renderSortHeader("Date", "date", "left")}
-                    <TableHead className="sticky top-0 z-10 bg-card">Details</TableHead>
-                    <TableHead className="sticky top-0 z-10 bg-card">Bank</TableHead>
-                    {renderSortHeader("Amount", "amount", "right")}
+                    {renderSortHeader("Date", "date", "left", "w-[120px]")}
+                    <TableHead className="sticky top-0 z-10 bg-card">
+                      Details
+                    </TableHead>
+                    <TableHead className="sticky top-0 z-10 bg-card w-[100px]">
+                      Bank
+                    </TableHead>
+                    {renderSortHeader("Amount", "amount", "right", "w-[130px]")}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paddingTop > 0 && (
                     <tr>
-                      <td style={{ height: paddingTop }} colSpan={COLUMN_COUNT} />
+                      <td
+                        style={{ height: paddingTop }}
+                        colSpan={COLUMN_COUNT}
+                      />
                     </tr>
                   )}
                   {virtualItems.map((virtualRow) => {
@@ -251,13 +295,19 @@ export function PayeeDetailSheet({
                   })}
                   {paddingBottom > 0 && (
                     <tr>
-                      <td style={{ height: paddingBottom }} colSpan={COLUMN_COUNT} />
+                      <td
+                        style={{ height: paddingBottom }}
+                        colSpan={COLUMN_COUNT}
+                      />
                     </tr>
                   )}
                 </TableBody>
               </Table>
             </TabsContent>
-            <TabsContent value="trend" className="min-h-0 flex-1 overflow-y-auto pt-2">
+            <TabsContent
+              value="trend"
+              className="min-h-0 flex-1 overflow-y-auto pt-2"
+            >
               <PayeeTrendChart
                 transactions={summary?.transactions ?? []}
                 currency={currency}
