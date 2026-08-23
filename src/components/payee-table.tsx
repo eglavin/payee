@@ -104,7 +104,7 @@ export function PayeeTable({
       <TableHead
         role="button"
         onClick={() => toggleSort(sortKeyValue)}
-        className="cursor-pointer select-none text-right"
+        className="sticky top-0 z-10 cursor-pointer bg-card text-right select-none"
       >
         <span className="inline-flex items-center gap-1">
           {label}
@@ -128,10 +128,10 @@ export function PayeeTable({
   }
 
   return (
-    <Table>
+    <Table containerClassName="max-h-[70vh] overflow-y-auto rounded-md border">
       <TableHeader>
         <TableRow>
-          <TableHead className="w-10">
+          <TableHead className="sticky top-0 z-10 w-10 bg-card">
             <Checkbox
               checked={allSelected}
               indeterminate={!allSelected && someSelected}
@@ -139,8 +139,8 @@ export function PayeeTable({
               aria-label="Select all payees"
             />
           </TableHead>
-          <TableHead>Payee</TableHead>
-          <TableHead>Category</TableHead>
+          <TableHead className="sticky top-0 z-10 bg-card">Payee</TableHead>
+          <TableHead className="sticky top-0 z-10 bg-card">Category</TableHead>
           {renderSortHeader("Spent", "totalDebit")}
           {renderSortHeader("Received", "totalCredit")}
           {renderSortHeader("Transactions", "count")}

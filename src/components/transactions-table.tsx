@@ -12,7 +12,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { CategoryPicker } from "@/components/category-picker";
 import { formatCurrency, formatDate } from "@/lib/format";
+import type { Category } from "@/lib/categories";
 import type { Transaction } from "@/lib/types";
 
 type SortKey = "date" | "payee" | "amount";
@@ -24,6 +26,10 @@ interface TransactionsTableProps {
   onSelectPayee: (payee: string) => void;
   selectedIds: Set<number>;
   onSelectionChange: (ids: Set<number>) => void;
+  categories: Category[];
+  getCategoryId: (payee: string) => string | undefined;
+  setCategoryId: (payee: string, categoryId: string | null) => void;
+  onAddCategory: (label: string) => Category;
 }
 
 export function TransactionsTable({
@@ -33,6 +39,10 @@ export function TransactionsTable({
   onSelectPayee,
   selectedIds,
   onSelectionChange,
+  categories,
+  getCategoryId,
+  setCategoryId,
+  onAddCategory,
 }: TransactionsTableProps) {
   const [sortKey, setSortKey] = useState<SortKey>("date");
   const [sortDir, setSortDir] = useState<"asc" | "desc">("desc");
@@ -68,7 +78,7 @@ export function TransactionsTable({
       <TableHead
         role="button"
         onClick={() => toggleSort(key)}
-        className={`cursor-pointer select-none ${align === "right" ? "text-right" : ""}`}
+        className={`sticky top-0 z-10 cursor-pointer bg-card select-none ${align === "right" ? "text-right" : ""}`}
       >
         <span className="inline-flex items-center gap-1">
           {label}
@@ -117,10 +127,10 @@ export function TransactionsTable({
   }
 
   return (
-    <Table>
+    <Table containerClassName="max-h-[70vh] overflow-y-auto rounded-md border">
       <TableHeader>
         <TableRow>
-          <TableHead className="w-10">
+          <TableHead className="sticky top-0 z-10 w-10 bg-card">
             <Checkbox
               checked={allSelected}
               indeterminate={!allSelected && someSelected}
@@ -130,8 +140,9 @@ export function TransactionsTable({
           </TableHead>
           {renderSortHeader("Date", "date")}
           {renderSortHeader("Payee", "payee")}
-          <TableHead>Details</TableHead>
-          <TableHead>Bank</TableHead>
+          <TableHead className="sticky top-0 z-10 bg-card">Category</TableHead>
+          <TableHead className="sticky top-0 z-10 bg-card">Details</TableHead>
+          <TableHead className="sticky top-0 z-10 bg-card">Bank</TableHead>
           {renderSortHeader("Amount", "amount", "right")}
         </TableRow>
       </TableHeader>
@@ -154,6 +165,15 @@ export function TransactionsTable({
               </TableCell>
               <TableCell className="whitespace-nowrap">{formatDate(txn.date)}</TableCell>
               <TableCell className="font-medium">{payee}</TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
+                <CategoryPicker
+                  size="sm"
+                  categories={categories}
+                  categoryId={getCategoryId(payee)}
+                  onCategoryChange={(categoryId) => setCategoryId(payee, categoryId)}
+                  onAddCategory={onAddCategory}
+                />
+              </TableCell>
               <TableCell className="text-muted-foreground">{txn.detail ?? "—"}</TableCell>
               <TableCell>
                 {txn.source ? (

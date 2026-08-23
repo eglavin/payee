@@ -102,7 +102,7 @@ export function PayeeDetailSheet({
       <TableHead
         role="button"
         onClick={() => toggleSort(sortKeyValue)}
-        className={`cursor-pointer select-none ${align === "right" ? "text-right" : ""}`}
+        className={`sticky top-0 z-10 cursor-pointer bg-card select-none ${align === "right" ? "text-right" : ""}`}
       >
         <span className="inline-flex items-center gap-1">
           {label}
@@ -119,7 +119,7 @@ export function PayeeDetailSheet({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="overflow-y-auto data-[side=right]:w-full data-[side=right]:sm:max-w-2xl">
+      <SheetContent className="data-[side=right]:w-full data-[side=right]:sm:max-w-2xl">
         <SheetHeader>
           <SheetTitle>{summary?.payee}</SheetTitle>
           <SheetDescription>
@@ -160,8 +160,8 @@ export function PayeeDetailSheet({
             </div>
           )}
         </SheetHeader>
-        <div className="px-4 pb-4">
-          <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <div className="flex min-h-0 flex-1 flex-col px-4 pb-4">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="flex min-h-0 flex-1 flex-col">
             <TabsList>
               <TabsTrigger value="transactions">
                 Transactions
@@ -176,13 +176,13 @@ export function PayeeDetailSheet({
                 </kbd>
               </TabsTrigger>
             </TabsList>
-            <TabsContent value="transactions">
-              <Table>
+            <TabsContent value="transactions" className="flex min-h-0 flex-1 flex-col">
+              <Table containerClassName="h-full overflow-y-auto rounded-md border">
                 <TableHeader>
                   <TableRow>
                     {renderSortHeader("Date", "date", "left")}
-                    <TableHead>Details</TableHead>
-                    <TableHead>Bank</TableHead>
+                    <TableHead className="sticky top-0 z-10 bg-card">Details</TableHead>
+                    <TableHead className="sticky top-0 z-10 bg-card">Bank</TableHead>
                     {renderSortHeader("Amount", "amount", "right")}
                   </TableRow>
                 </TableHeader>
@@ -222,7 +222,7 @@ export function PayeeDetailSheet({
                 </TableBody>
               </Table>
             </TabsContent>
-            <TabsContent value="trend" className="pt-2">
+            <TabsContent value="trend" className="min-h-0 flex-1 overflow-y-auto pt-2">
               <PayeeTrendChart
                 transactions={summary?.transactions ?? []}
                 currency={currency}

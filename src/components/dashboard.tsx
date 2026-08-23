@@ -374,6 +374,10 @@ export function Dashboard() {
                   onSelectPayee={setSelectedPayee}
                   selectedIds={selectedIds}
                   onSelectionChange={setSelectedIds}
+                  categories={categories}
+                  getCategoryId={getCategoryId}
+                  setCategoryId={setCategoryId}
+                  onAddCategory={addCustomCategory}
                 />
               )}
             </CardContent>
