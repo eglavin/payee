@@ -132,4 +132,25 @@ describe("clusterPayeeKeys", () => {
       canonical.get(keyOf("Transfer from KILLIAN PATRICK GLAVIN")),
     );
   });
+
+  it("never merges different PAYPAL payees, even when they'd otherwise cluster", () => {
+    // Regression: every PayPal transaction is prefixed "PAYPAL *", so
+    // firstTokensMatch's gate (which only compares the first word) let
+    // unrelated merchants sharing that prefix cluster together.
+    const counts = new Map(
+      [
+        "PAYPAL *AXOSOF",
+        "PAYPAL *BITWAR",
+        "PAYPAL *EBAY I",
+        "PAYPAL *ELITE",
+        "PAYPAL *FEDEXE",
+        "PAYPAL *PADDLE",
+        "PAYPAL *TEAMBL",
+      ].map((k) => [normalizePayeeKey(k), 1]),
+    );
+
+    const canonical = clusterPayeeKeys(counts);
+
+    expect(new Set(canonical.values()).size).toBe(counts.size);
+  });
 });

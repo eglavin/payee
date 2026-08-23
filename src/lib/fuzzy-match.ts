@@ -57,9 +57,37 @@ function firstTokensMatch(a: string, b: string): boolean {
 export const DEFAULT_FUZZY_THRESHOLD = 0.5;
 
 /**
+ * A manual override that blocks fuzzy merges between any two payee keys it
+ * claims, bypassing the normal Dice-coefficient / firstTokensMatch gate
+ * entirely. Intended for payment processors/marketplaces that prefix every
+ * transaction with their own name (e.g. "PAYPAL *"), which otherwise share
+ * a first token across completely unrelated underlying merchants.
+ *
+ * To add a new override, append an entry to `MATCH_OVERRIDES` below.
+ */
+type MatchOverride = {
+  name: string;
+  /** Returns true if this override claims the given payee key. */
+  matches: (key: string) => boolean;
+};
+
+const MATCH_OVERRIDES: MatchOverride[] = [
+  {
+    name: "paypal",
+    matches: (key) => key.startsWith("PAYPAL"),
+  },
+];
+
+/** True if some override claims both keys, meaning they must never be merged. */
+function isBlockedByOverride(a: string, b: string): boolean {
+  return MATCH_OVERRIDES.some((override) => override.matches(a) && override.matches(b));
+}
+
+/**
  * Clusters normalized payee keys into likely-same-merchant groups via
- * union-find over Dice similarity, gated by firstTokensMatch. Returns a
- * map from each key to its cluster's canonical (most frequent) label.
+ * union-find over Dice similarity, gated by firstTokensMatch and
+ * MATCH_OVERRIDES. Returns a map from each key to its cluster's canonical
+ * (most frequent) label.
  */
 export function clusterPayeeKeys(
   keysWithCounts: Map<string, number>,
@@ -90,6 +118,7 @@ export function clusterPayeeKeys(
 
   for (let i = 0; i < keys.length; i++) {
     for (let j = i + 1; j < keys.length; j++) {
+      if (isBlockedByOverride(keys[i], keys[j])) continue;
       if (
         diceCoefficient(keys[i], keys[j]) >= threshold &&
         firstTokensMatch(keys[i], keys[j])
