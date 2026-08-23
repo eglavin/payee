@@ -25,6 +25,9 @@ import { formatCurrency, formatDate } from "@/lib/format";
 import type { Category } from "@/lib/categories";
 import type { PayeeSummary, Transaction } from "@/lib/types";
 import { useLocalStorage } from "@/hooks/use-local-storage";
+import { useVirtualTableRows } from "@/hooks/use-virtual-table-rows";
+
+const COLUMN_COUNT = 4;
 
 interface PayeeDetailSheetProps {
   summary: PayeeSummary | null;
@@ -68,6 +71,9 @@ export function PayeeDetailSheet({
   }, [summary, sortKey, sortDir]);
 
   const isMerged = (summary?.variants.length ?? 0) > 1;
+
+  const { containerRef, virtualItems, paddingTop, paddingBottom, measureElement } =
+    useVirtualTableRows({ count: transactions.length, estimateRowHeight: 41 });
 
   useEffect(() => {
     if (!open) return;
@@ -177,7 +183,10 @@ export function PayeeDetailSheet({
               </TabsTrigger>
             </TabsList>
             <TabsContent value="transactions" className="flex min-h-0 flex-1 flex-col">
-              <Table containerClassName="h-full overflow-y-auto rounded-md border">
+              <Table
+                containerClassName="h-full overflow-y-auto rounded-md border"
+                containerRef={containerRef}
+              >
                 <TableHeader>
                   <TableRow>
                     {renderSortHeader("Date", "date", "left")}
@@ -187,38 +196,51 @@ export function PayeeDetailSheet({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {transactions.map((txn, i) => (
-                    <TableRow key={`${txn.date.toISOString()}-${i}`}>
-                      <TableCell className="whitespace-nowrap">
-                        {formatDate(txn.date)}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {[isMerged ? txn.payee : null, txn.detail]
-                          .filter(Boolean)
-                          .join(" · ") || "—"}
-                      </TableCell>
-                      <TableCell>
-                        {txn.source ? (
-                          <Badge variant="secondary" className="font-normal">
-                            {txn.source}
-                          </Badge>
-                        ) : (
-                          "—"
-                        )}
-                      </TableCell>
-                      <TableCell
-                        className={`font-mono text-right tabular-nums whitespace-nowrap ${
-                          txn.debit > 0
-                            ? "text-destructive"
-                            : "text-emerald-600 dark:text-emerald-400"
-                        }`}
-                      >
-                        {txn.debit > 0
-                          ? `-${formatCurrency(txn.debit, currency)}`
-                          : `+${formatCurrency(txn.credit, currency)}`}
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {paddingTop > 0 && (
+                    <tr>
+                      <td style={{ height: paddingTop }} colSpan={COLUMN_COUNT} />
+                    </tr>
+                  )}
+                  {virtualItems.map((virtualRow) => {
+                    const txn = transactions[virtualRow.index];
+                    return (
+                      <TableRow key={txn.id} data-index={virtualRow.index} ref={measureElement}>
+                        <TableCell className="whitespace-nowrap">
+                          {formatDate(txn.date)}
+                        </TableCell>
+                        <TableCell className="text-muted-foreground">
+                          {[isMerged ? txn.payee : null, txn.detail]
+                            .filter(Boolean)
+                            .join(" · ") || "—"}
+                        </TableCell>
+                        <TableCell>
+                          {txn.source ? (
+                            <Badge variant="secondary" className="font-normal">
+                              {txn.source}
+                            </Badge>
+                          ) : (
+                            "—"
+                          )}
+                        </TableCell>
+                        <TableCell
+                          className={`font-mono text-right tabular-nums whitespace-nowrap ${
+                            txn.debit > 0
+                              ? "text-destructive"
+                              : "text-emerald-600 dark:text-emerald-400"
+                          }`}
+                        >
+                          {txn.debit > 0
+                            ? `-${formatCurrency(txn.debit, currency)}`
+                            : `+${formatCurrency(txn.credit, currency)}`}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                  {paddingBottom > 0 && (
+                    <tr>
+                      <td style={{ height: paddingBottom }} colSpan={COLUMN_COUNT} />
+                    </tr>
+                  )}
                 </TableBody>
               </Table>
             </TabsContent>

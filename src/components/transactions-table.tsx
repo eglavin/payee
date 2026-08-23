@@ -16,6 +16,9 @@ import { CategoryPicker } from "@/components/category-picker";
 import { formatCurrency, formatDate } from "@/lib/format";
 import type { Category } from "@/lib/categories";
 import type { Transaction } from "@/lib/types";
+import { useVirtualTableRows } from "@/hooks/use-virtual-table-rows";
+
+const COLUMN_COUNT = 7;
 
 type SortKey = "date" | "payee" | "amount";
 
@@ -118,16 +121,22 @@ export function TransactionsTable({
     onSelectionChange(next);
   }
 
+  const { containerRef, virtualItems, paddingTop, paddingBottom, measureElement } =
+    useVirtualTableRows({ count: sorted.length, estimateRowHeight: 37 });
+
   if (sorted.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
+      <p className="flex h-[70vh] items-center justify-center text-center text-sm text-muted-foreground">
         No transactions to show.
       </p>
     );
   }
 
   return (
-    <Table containerClassName="max-h-[70vh] overflow-y-auto rounded-md border">
+    <Table
+      containerClassName="h-[70vh] overflow-y-auto rounded-md border"
+      containerRef={containerRef}
+    >
       <TableHeader>
         <TableRow>
           <TableHead className="sticky top-0 z-10 w-10 bg-card">
@@ -147,11 +156,19 @@ export function TransactionsTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {sorted.map((txn) => {
+        {paddingTop > 0 && (
+          <tr>
+            <td style={{ height: paddingTop }} colSpan={COLUMN_COUNT} />
+          </tr>
+        )}
+        {virtualItems.map((virtualRow) => {
+          const txn = sorted[virtualRow.index];
           const payee = resolvePayee(txn);
           return (
             <TableRow
               key={txn.id}
+              data-index={virtualRow.index}
+              ref={measureElement}
               className="cursor-pointer"
               onClick={() => onSelectPayee(payee)}
               data-state={selectedIds.has(txn.id) ? "selected" : undefined}
@@ -198,6 +215,11 @@ export function TransactionsTable({
             </TableRow>
           );
         })}
+        {paddingBottom > 0 && (
+          <tr>
+            <td style={{ height: paddingBottom }} colSpan={COLUMN_COUNT} />
+          </tr>
+        )}
       </TableBody>
     </Table>
   );

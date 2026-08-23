@@ -16,6 +16,7 @@ import { CategoryPicker } from "@/components/category-picker";
 import { formatCurrency } from "@/lib/format";
 import type { Category } from "@/lib/categories";
 import type { PayeeSummary } from "@/lib/types";
+import { useVirtualTableRows } from "@/hooks/use-virtual-table-rows";
 
 type SortKey = "totalDebit" | "totalCredit" | "count" | "merged";
 
@@ -119,16 +120,23 @@ export function PayeeTable({
     );
   }
 
+  const columnCount = hasMerges ? 7 : 6;
+  const { containerRef, virtualItems, paddingTop, paddingBottom, measureElement } =
+    useVirtualTableRows({ count: sorted.length, estimateRowHeight: 37 });
+
   if (summaries.length === 0) {
     return (
-      <p className="py-8 text-center text-sm text-muted-foreground">
+      <p className="flex h-[70vh] items-center justify-center text-center text-sm text-muted-foreground">
         No payees to show.
       </p>
     );
   }
 
   return (
-    <Table containerClassName="max-h-[70vh] overflow-y-auto rounded-md border">
+    <Table
+      containerClassName="h-[70vh] overflow-y-auto rounded-md border"
+      containerRef={containerRef}
+    >
       <TableHeader>
         <TableRow>
           <TableHead className="sticky top-0 z-10 w-10 bg-card">
@@ -148,54 +156,69 @@ export function PayeeTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {sorted.map((summary) => (
-          <TableRow
-            key={summary.payee}
-            className="cursor-pointer"
-            onClick={() => onSelectPayee(summary.payee)}
-            data-state={selectedPayees.has(summary.payee) ? "selected" : undefined}
-          >
-            <TableCell onClick={(e) => e.stopPropagation()}>
-              <Checkbox
-                checked={selectedPayees.has(summary.payee)}
-                onCheckedChange={(checked) => toggleRow(summary.payee, checked === true)}
-                aria-label={`Select ${summary.payee}`}
-              />
-            </TableCell>
-            <TableCell className="font-medium">{summary.payee}</TableCell>
-            <TableCell onClick={(e) => e.stopPropagation()}>
-              <CategoryPicker
-                size="sm"
-                categories={categories}
-                categoryId={getCategoryId(summary.payee)}
-                onCategoryChange={(categoryId) => setCategoryId(summary.payee, categoryId)}
-                onAddCategory={onAddCategory}
-              />
-            </TableCell>
-            <TableCell className="font-mono text-right tabular-nums">
-              {summary.totalDebit > 0
-                ? formatCurrency(summary.totalDebit, currency)
-                : "—"}
-            </TableCell>
-            <TableCell className="font-mono text-right tabular-nums">
-              {summary.totalCredit > 0
-                ? formatCurrency(summary.totalCredit, currency)
-                : "—"}
-            </TableCell>
-            <TableCell className="font-mono text-right tabular-nums">{summary.count}</TableCell>
-            {hasMerges && (
-              <TableCell className="text-right">
-                {summary.variants.length > 1 ? (
-                  <Badge variant="secondary" className="font-mono font-normal tabular-nums">
-                    {summary.variants.length}
-                  </Badge>
-                ) : (
-                  "—"
-                )}
+        {paddingTop > 0 && (
+          <tr>
+            <td style={{ height: paddingTop }} colSpan={columnCount} />
+          </tr>
+        )}
+        {virtualItems.map((virtualRow) => {
+          const summary = sorted[virtualRow.index];
+          return (
+            <TableRow
+              key={summary.payee}
+              data-index={virtualRow.index}
+              ref={measureElement}
+              className="cursor-pointer"
+              onClick={() => onSelectPayee(summary.payee)}
+              data-state={selectedPayees.has(summary.payee) ? "selected" : undefined}
+            >
+              <TableCell onClick={(e) => e.stopPropagation()}>
+                <Checkbox
+                  checked={selectedPayees.has(summary.payee)}
+                  onCheckedChange={(checked) => toggleRow(summary.payee, checked === true)}
+                  aria-label={`Select ${summary.payee}`}
+                />
               </TableCell>
-            )}
-          </TableRow>
-        ))}
+              <TableCell className="font-medium">{summary.payee}</TableCell>
+              <TableCell onClick={(e) => e.stopPropagation()}>
+                <CategoryPicker
+                  size="sm"
+                  categories={categories}
+                  categoryId={getCategoryId(summary.payee)}
+                  onCategoryChange={(categoryId) => setCategoryId(summary.payee, categoryId)}
+                  onAddCategory={onAddCategory}
+                />
+              </TableCell>
+              <TableCell className="font-mono text-right tabular-nums">
+                {summary.totalDebit > 0
+                  ? formatCurrency(summary.totalDebit, currency)
+                  : "—"}
+              </TableCell>
+              <TableCell className="font-mono text-right tabular-nums">
+                {summary.totalCredit > 0
+                  ? formatCurrency(summary.totalCredit, currency)
+                  : "—"}
+              </TableCell>
+              <TableCell className="font-mono text-right tabular-nums">{summary.count}</TableCell>
+              {hasMerges && (
+                <TableCell className="text-right">
+                  {summary.variants.length > 1 ? (
+                    <Badge variant="secondary" className="font-mono font-normal tabular-nums">
+                      {summary.variants.length}
+                    </Badge>
+                  ) : (
+                    "—"
+                  )}
+                </TableCell>
+              )}
+            </TableRow>
+          );
+        })}
+        {paddingBottom > 0 && (
+          <tr>
+            <td style={{ height: paddingBottom }} colSpan={columnCount} />
+          </tr>
+        )}
       </TableBody>
     </Table>
   );
