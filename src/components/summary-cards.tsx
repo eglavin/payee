@@ -31,7 +31,7 @@ export function SummaryCards({
       <Card>
         <CardHeader>
           <CardDescription>Money in</CardDescription>
-          <CardTitle className="font-mono text-2xl tabular-nums text-emerald-600 dark:text-emerald-400">
+          <CardTitle className="font-mono text-2xl tabular-nums text-emerald-700 dark:text-emerald-400">
             {formatCurrency(totalCredit, currency)}
           </CardTitle>
         </CardHeader>

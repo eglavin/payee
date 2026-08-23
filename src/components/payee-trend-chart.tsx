@@ -42,48 +42,67 @@ export function PayeeTrendChart({ transactions, currency }: PayeeTrendChartProps
     );
   }
 
+  const chartDescriptionId = "payee-trend-chart-description";
+  const chartDescription = data
+    .map(
+      (m) =>
+        `${m.monthLabel}: spent ${formatCurrency(m.debit, currency)}, received ${formatCurrency(m.credit, currency)}`,
+    )
+    .join("; ");
+
   return (
-    <ChartContainer config={chartConfig} className="aspect-auto h-[350px] w-full">
-      <LineChart data={data} margin={{ left: 8, right: 16 }}>
-        <CartesianGrid vertical={false} />
-        <XAxis dataKey="monthLabel" tickLine={false} axisLine={false} />
-        <YAxis
-          tickLine={false}
-          axisLine={false}
-          tick={{ fontFamily: "var(--font-mono)" }}
-          tickFormatter={(value) => formatCurrency(value, currency)}
-          width={80}
-        />
-        <ChartTooltip
-          content={
-            <ChartTooltipContent
-              formatter={(value, name) => (
-                <span>
-                  {chartConfig[name as keyof typeof chartConfig]?.label ?? name}:{" "}
-                  <span className="font-mono tabular-nums">
-                    {formatCurrency(Number(value), currency)}
+    <>
+      <p id={chartDescriptionId} className="sr-only">
+        {chartDescription}
+      </p>
+      <ChartContainer
+        config={chartConfig}
+        className="aspect-auto h-[350px] w-full"
+        role="img"
+        aria-label="Line chart: monthly spending and income for this payee"
+        aria-describedby={chartDescriptionId}
+      >
+        <LineChart data={data} margin={{ left: 8, right: 16 }}>
+          <CartesianGrid vertical={false} />
+          <XAxis dataKey="monthLabel" tickLine={false} axisLine={false} />
+          <YAxis
+            tickLine={false}
+            axisLine={false}
+            tick={{ fontFamily: "var(--font-mono)" }}
+            tickFormatter={(value) => formatCurrency(value, currency)}
+            width={80}
+          />
+          <ChartTooltip
+            content={
+              <ChartTooltipContent
+                formatter={(value, name) => (
+                  <span>
+                    {chartConfig[name as keyof typeof chartConfig]?.label ?? name}:{" "}
+                    <span className="font-mono tabular-nums">
+                      {formatCurrency(Number(value), currency)}
+                    </span>
                   </span>
-                </span>
-              )}
-            />
-          }
-        />
-        <ChartLegend content={<ChartLegendContent />} />
-        <Line
-          type="monotone"
-          dataKey="debit"
-          stroke="var(--color-debit)"
-          strokeWidth={2}
-          dot={false}
-        />
-        <Line
-          type="monotone"
-          dataKey="credit"
-          stroke="var(--color-credit)"
-          strokeWidth={2}
-          dot={false}
-        />
-      </LineChart>
-    </ChartContainer>
+                )}
+              />
+            }
+          />
+          <ChartLegend content={<ChartLegendContent />} />
+          <Line
+            type="monotone"
+            dataKey="debit"
+            stroke="var(--color-debit)"
+            strokeWidth={2}
+            dot={false}
+          />
+          <Line
+            type="monotone"
+            dataKey="credit"
+            stroke="var(--color-credit)"
+            strokeWidth={2}
+            dot={false}
+          />
+        </LineChart>
+      </ChartContainer>
+    </>
   );
 }

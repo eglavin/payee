@@ -80,7 +80,7 @@ export function SelectedTransactionsDialog({
                     className={`font-mono text-right tabular-nums whitespace-nowrap ${
                       txn.debit > 0
                         ? "text-destructive"
-                        : "text-emerald-600 dark:text-emerald-400"
+                        : "text-emerald-700 dark:text-emerald-400"
                     }`}
                   >
                     {txn.debit > 0

@@ -106,9 +106,16 @@ export function PayeeDetailSheet({
     const active = sortKey === sortKeyValue;
     return (
       <TableHead
-        role="button"
+        tabIndex={0}
+        aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
         onClick={() => toggleSort(sortKeyValue)}
-        className={`sticky top-0 z-10 cursor-pointer bg-card select-none ${align === "right" ? "text-right" : ""}`}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggleSort(sortKeyValue);
+          }
+        }}
+        className={`sticky top-0 z-10 cursor-pointer bg-card select-none focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${align === "right" ? "text-right" : ""}`}
       >
         <span className="inline-flex items-center gap-1">
           {label}
@@ -186,9 +193,10 @@ export function PayeeDetailSheet({
               <Table
                 containerClassName="h-full overflow-y-auto rounded-md border"
                 containerRef={containerRef}
+                aria-rowcount={transactions.length + 1}
               >
                 <TableHeader>
-                  <TableRow>
+                  <TableRow aria-rowindex={1}>
                     {renderSortHeader("Date", "date", "left")}
                     <TableHead className="sticky top-0 z-10 bg-card">Details</TableHead>
                     <TableHead className="sticky top-0 z-10 bg-card">Bank</TableHead>
@@ -204,7 +212,12 @@ export function PayeeDetailSheet({
                   {virtualItems.map((virtualRow) => {
                     const txn = transactions[virtualRow.index];
                     return (
-                      <TableRow key={txn.id} data-index={virtualRow.index} ref={measureElement}>
+                      <TableRow
+                        key={txn.id}
+                        data-index={virtualRow.index}
+                        ref={measureElement}
+                        aria-rowindex={virtualRow.index + 2}
+                      >
                         <TableCell className="whitespace-nowrap">
                           {formatDate(txn.date)}
                         </TableCell>
@@ -226,7 +239,7 @@ export function PayeeDetailSheet({
                           className={`font-mono text-right tabular-nums whitespace-nowrap ${
                             txn.debit > 0
                               ? "text-destructive"
-                              : "text-emerald-600 dark:text-emerald-400"
+                              : "text-emerald-700 dark:text-emerald-400"
                           }`}
                         >
                           {txn.debit > 0

@@ -181,12 +181,16 @@ export function FileUpload({
             </div>
           ))}
           <div className="flex items-center justify-between gap-3 border-t px-1 pt-2">
-            <Label htmlFor="csv-upload" className="cursor-pointer text-sm font-normal">
-              <span className="inline-flex items-center gap-1 text-primary">
-                <Plus className="size-3.5" />
-                Add more files
-              </span>
-            </Label>
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="h-auto p-0 text-sm font-normal"
+              onClick={() => inputRef.current?.click()}
+            >
+              <Plus className="size-3.5" />
+              Add more files
+            </Button>
             <Button variant="ghost" size="sm" onClick={handleClearAll}>
               <X className="size-4" />
               Clear all

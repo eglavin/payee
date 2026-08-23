@@ -62,6 +62,13 @@ export function TopPayeesChart({
 
   const data = view === "payee" ? payeeData : categoryData;
 
+  const chartDescriptionId = "top-payees-chart-description";
+  const chartLabel =
+    view === "payee" ? "Bar chart: top payees by spend" : "Bar chart: top categories by spend";
+  const chartDescription = data
+    .map((d) => `${d.label}: ${formatCurrency(d.spend, currency)}`)
+    .join(", ");
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between gap-4">
@@ -81,48 +88,56 @@ export function TopPayeesChart({
             No spending to chart yet.
           </p>
         ) : (
-          <ChartContainer
-            config={chartConfig}
-            className="aspect-auto h-[320px] w-full"
-          >
-            <BarChart
-              data={data}
-              layout="vertical"
-              margin={{ left: 8, right: 16 }}
+          <>
+            <p id={chartDescriptionId} className="sr-only">
+              {chartDescription}
+            </p>
+            <ChartContainer
+              config={chartConfig}
+              className="aspect-auto h-[320px] w-full"
+              role="img"
+              aria-label={chartLabel}
+              aria-describedby={chartDescriptionId}
             >
-              <CartesianGrid horizontal={false} />
-              <XAxis
-                type="number"
-                tick={{ fontFamily: "var(--font-mono)" }}
-                tickFormatter={(value) => formatCurrency(value, currency)}
-              />
-              <YAxis
-                dataKey="label"
-                type="category"
-                width={140}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value: string) =>
-                  value.length > 20 ? `${value.slice(0, 20)}…` : value
-                }
-              />
-              <ChartTooltip
-                content={
-                  <ChartTooltipContent
-                    formatter={(value) => (
-                      <span className="font-mono tabular-nums">
-                        {formatCurrency(Number(value), currency)}
-                      </span>
-                    )}
-                  />
-                }
-              />
-              <Bar dataKey="spend" fill="var(--color-spend)" radius={4}>
-                {view === "category" &&
-                  data.map((entry) => <Cell key={entry.label} fill={entry.fill} />)}
-              </Bar>
-            </BarChart>
-          </ChartContainer>
+              <BarChart
+                data={data}
+                layout="vertical"
+                margin={{ left: 8, right: 16 }}
+              >
+                <CartesianGrid horizontal={false} />
+                <XAxis
+                  type="number"
+                  tick={{ fontFamily: "var(--font-mono)" }}
+                  tickFormatter={(value) => formatCurrency(value, currency)}
+                />
+                <YAxis
+                  dataKey="label"
+                  type="category"
+                  width={140}
+                  tickLine={false}
+                  axisLine={false}
+                  tickFormatter={(value: string) =>
+                    value.length > 20 ? `${value.slice(0, 20)}…` : value
+                  }
+                />
+                <ChartTooltip
+                  content={
+                    <ChartTooltipContent
+                      formatter={(value) => (
+                        <span className="font-mono tabular-nums">
+                          {formatCurrency(Number(value), currency)}
+                        </span>
+                      )}
+                    />
+                  }
+                />
+                <Bar dataKey="spend" fill="var(--color-spend)" radius={4}>
+                  {view === "category" &&
+                    data.map((entry) => <Cell key={entry.label} fill={entry.fill} />)}
+                </Bar>
+              </BarChart>
+            </ChartContainer>
+          </>
         )}
       </CardContent>
     </Card>

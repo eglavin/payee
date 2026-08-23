@@ -103,9 +103,16 @@ export function PayeeTable({
     const active = sortKey === sortKeyValue;
     return (
       <TableHead
-        role="button"
+        tabIndex={0}
+        aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
         onClick={() => toggleSort(sortKeyValue)}
-        className="sticky top-0 z-10 cursor-pointer bg-card text-right select-none"
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggleSort(sortKeyValue);
+          }
+        }}
+        className="sticky top-0 z-10 cursor-pointer bg-card text-right select-none focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
       >
         <span className="inline-flex items-center gap-1">
           {label}
@@ -136,9 +143,10 @@ export function PayeeTable({
     <Table
       containerClassName="h-[70vh] overflow-y-auto rounded-md border"
       containerRef={containerRef}
+      aria-rowcount={sorted.length + 1}
     >
       <TableHeader>
-        <TableRow>
+        <TableRow aria-rowindex={1}>
           <TableHead className="sticky top-0 z-10 w-10 bg-card">
             <Checkbox
               checked={allSelected}
@@ -168,8 +176,18 @@ export function PayeeTable({
               key={summary.payee}
               data-index={virtualRow.index}
               ref={measureElement}
-              className="cursor-pointer"
+              className="cursor-pointer focus-visible:outline-none focus-visible:ring-3 focus-visible:-ring-offset-1 focus-visible:ring-ring/50"
+              tabIndex={0}
+              aria-label={`View details for ${summary.payee}`}
+              aria-rowindex={virtualRow.index + 2}
               onClick={() => onSelectPayee(summary.payee)}
+              onKeyDown={(e) => {
+                if (e.target !== e.currentTarget) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelectPayee(summary.payee);
+                }
+              }}
               data-state={selectedPayees.has(summary.payee) ? "selected" : undefined}
             >
               <TableCell onClick={(e) => e.stopPropagation()}>

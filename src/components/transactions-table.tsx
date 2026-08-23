@@ -79,9 +79,16 @@ export function TransactionsTable({
     const active = sortKey === key;
     return (
       <TableHead
-        role="button"
+        tabIndex={0}
+        aria-sort={active ? (sortDir === "asc" ? "ascending" : "descending") : undefined}
         onClick={() => toggleSort(key)}
-        className={`sticky top-0 z-10 cursor-pointer bg-card select-none ${align === "right" ? "text-right" : ""}`}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            toggleSort(key);
+          }
+        }}
+        className={`sticky top-0 z-10 cursor-pointer bg-card select-none focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 ${align === "right" ? "text-right" : ""}`}
       >
         <span className="inline-flex items-center gap-1">
           {label}
@@ -136,9 +143,10 @@ export function TransactionsTable({
     <Table
       containerClassName="h-[70vh] overflow-y-auto rounded-md border"
       containerRef={containerRef}
+      aria-rowcount={sorted.length + 1}
     >
       <TableHeader>
-        <TableRow>
+        <TableRow aria-rowindex={1}>
           <TableHead className="sticky top-0 z-10 w-10 bg-card">
             <Checkbox
               checked={allSelected}
@@ -169,8 +177,18 @@ export function TransactionsTable({
               key={txn.id}
               data-index={virtualRow.index}
               ref={measureElement}
-              className="cursor-pointer"
+              className="cursor-pointer focus-visible:outline-none focus-visible:ring-3 focus-visible:-ring-offset-1 focus-visible:ring-ring/50"
+              tabIndex={0}
+              aria-label={`View details for ${payee}`}
+              aria-rowindex={virtualRow.index + 2}
               onClick={() => onSelectPayee(payee)}
+              onKeyDown={(e) => {
+                if (e.target !== e.currentTarget) return;
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onSelectPayee(payee);
+                }
+              }}
               data-state={selectedIds.has(txn.id) ? "selected" : undefined}
             >
               <TableCell onClick={(e) => e.stopPropagation()}>
@@ -205,7 +223,7 @@ export function TransactionsTable({
                 className={`font-mono text-right tabular-nums whitespace-nowrap ${
                   txn.debit > 0
                     ? "text-destructive"
-                    : "text-emerald-600 dark:text-emerald-400"
+                    : "text-emerald-700 dark:text-emerald-400"
                 }`}
               >
                 {txn.debit > 0
