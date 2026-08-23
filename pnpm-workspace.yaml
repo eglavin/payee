@@ -1,3 +1,15 @@
 allowBuilds:
   sharp: false
   unrs-resolver: false
+
+# Supply chain security mitigations, see https://pnpm.io/supply-chain-security
+blockExoticSubdeps: true
+minimumReleaseAge: 4320
+trustPolicy: no-downgrade
+trustPolicyExclude:
+  - 'eslint-import-resolver-typescript@3.10.1'
+  - 'reselect@5.1.1'
+  - 'semver@6.3.1'
+
+# Always save exact versions when adding new dependencies.
+savePrefix: ""
